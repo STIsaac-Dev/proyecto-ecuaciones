@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Circuito RC en lógica CMOS</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>Carga y descarga en circuitos RC</h1>
+  <p>Conmutación digital en hardware: cómo una resistencia de canal y una capacitancia parásita limitan la velocidad de una señal en lógica CMOS.</p>
+</header>
+<nav>
+  <a href="#modelo">1 · Modelo</a><a href="#solucion">2 · Solución</a><a href="#simulacion">3 · Simulación</a><a href="#analisis">4 · Análisis</a>
+</nav>
+
+<main>
+<!-- 1 -->
+<section id="modelo">
+  <h2><span>1</span>El modelo y sus términos</h2>
+  <p class="lead">Cuando una compuerta CMOS cambia de estado, su transistor de salida carga o descarga la capacitancia de la pista y de las compuertas que le siguen. Ese nodo se comporta como un circuito RC.</p>
+  <div class="card eq">
+    <span class="fr"><span>dV(t)</span><span>dt</span></span> + <span class="fr"><span>1</span><span>RC</span></span> V(t) = <span class="fr"><span>1</span><span>RC</span></span> V<sub>in</sub>(t)
+  </div>
+  <h3>¿Qué hace cada término?</h3>
+  <div class="terms">
+    <div class="card"><b>V(t)</b> — voltaje del nodo lógico
+      <p>Incógnita de la ecuación. Es lo que vería un osciloscopio y lo que “lee” la siguiente compuerta: si cruza el umbral V<sub>IH</sub> se interpreta como 1, y si baja de V<sub>IL</sub>, como 0. Su lentitud para llegar ahí es el retardo de propagación.</p></div>
+    <div class="card"><b>dV/dt</b> — rapidez de cambio
+      <p>Es proporcional a la corriente del condensador (i = C·dV/dt). Es máxima justo en la conmutación, cuando V y V<sub>in</sub> están más separados, y tiende a cero a medida que el nodo se estabiliza.</p></div>
+    <div class="card"><b>1/(RC) · V(t)</b> — término de relajación
+      <p>Representa la corriente que se “pierde” hacia la entrada a través de R. Mientras mayor es el producto RC, menor es este coeficiente y más lento es el sistema. Este término hace que V(t) tienda a V<sub>in</sub> (comportamiento estable, sin oscilaciones).</p></div>
+    <div class="card"><b>V<sub>in</sub>(t)</b> — señal de entrada (forzamiento)
+      <p>Escalón, pulso o reloj generado por la etapa anterior (0 ó V<sub>DD</sub>). Es lo que “empuja” al nodo. Con V<sub>in</sub> = 0 la ecuación queda homogénea y describe solo la descarga natural.</p></div>
+    <div class="card"><b>R</b> — resistencia de pista/canal
+      <p>Suma de la resistencia de encendido del transistor (R<sub>on</sub> del PMOS o NMOS) y la de la pista. Limita la corriente i = (V<sub>in</sub> − V)/R: más R implica menos corriente y conmutación más lenta.</p></div>
+    <div class="card"><b>C</b> — capacitancia parásita
+      <p>Capacitancia de las compuertas conectadas (fan-out), de las uniones del drenador y de la pista. Almacena la carga Q = C·V que hay que mover en cada conmutación, por lo que determina tanto la velocidad como la energía consumida.</p></div>
+    <div class="card"><b>τ = RC</b> — constante de tiempo
+      <p>Combina R y C en un solo parámetro con unidades de tiempo (kΩ·pF = ns). V alcanza el 63,2 % del salto en τ y el 99,3 % en 5τ. Es el “reloj interno” del nodo.</p></div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="solucion">
+  <h2><span>2</span>Clasificación y solución</h2>
+  <p class="lead">Se identifica el tipo de ecuación y se resuelve analíticamente con el método del factor integrante.</p>
+  <div class="card">
+    <span class="tag">EDO ordinaria</span><span class="tag">Primer orden</span><span class="tag">Lineal</span><span class="tag">Coeficientes constantes</span><span class="tag">No homogénea</span><span class="tag">Separable si V<sub>in</sub> es constante</span>
+    <p>Tiene una sola variable independiente (t), la derivada de mayor orden es la primera, y V y dV/dt aparecen elevados a la potencia 1. Con τ = RC queda en la forma estándar <i>y′ + P·y = Q(t)</i>, con P = 1/τ constante.</p>
+    <div class="eq sm">V′ + V/τ = V<sub>in</sub>(t)/τ</div>
+    <ol class="steps">
+      <li><b>Factor integrante:</b> μ(t) = e<sup>∫P dt</sup> = e<sup>t/τ</sup>.</li>
+      <li><b>Multiplicar la ecuación por μ:</b> el lado izquierdo es la derivada de un producto:
+        <div class="eq sm">d/dt [ V·e<sup>t/τ</sup> ] = (V<sub>in</sub>/τ)·e<sup>t/τ</sup></div></li>
+      <li><b>Integrar</b> para V<sub>in</sub> constante en el tramo: V·e<sup>t/τ</sup> = V<sub>in</sub>·e<sup>t/τ</sup> + K.</li>
+      <li><b>Despejar</b> V = V<sub>in</sub> + K·e<sup>−t/τ</sup>, y con la condición inicial V(0) = V₀ se obtiene K = V₀ − V<sub>in</sub>.</li>
+    </ol>
+    <div class="eq">V(t) = V<sub>in</sub> + (V₀ − V<sub>in</sub>)·e<sup>−t/τ</sup></div>
+    <p>La solución se divide en un <b>régimen estacionario</b> (V<sub>in</sub>) y un <b>transitorio</b> que decae exponencialmente.</p>
+  </div>
+  <div class="two" style="margin-top:16px">
+    <div class="card"><h3 style="margin-top:0">Carga (V₀ = 0, V<sub>in</sub> = V<sub>DD</sub>)</h3>
+      <div class="eq sm">V(t) = V<sub>DD</sub>(1 − e<sup>−t/τ</sup>)</div>
+      <p>Retardo al 50 %: t<sub>pd</sub> = τ·ln 2 ≈ 0,69τ. Tiempo de subida 10–90 %: t<sub>r</sub> = τ·ln 9 ≈ 2,2τ.</p></div>
+    <div class="card"><h3 style="margin-top:0">Descarga (V₀ = V<sub>DD</sub>, V<sub>in</sub> = 0)</h3>
+      <div class="eq sm">V(t) = V<sub>DD</sub>·e<sup>−t/τ</sup></div>
+      <p>Es la solución de la ecuación homogénea, y el tiempo de bajada vale lo mismo: t<sub>f</sub> = 2,2τ.</p></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3 style="margin-top:0">Pulso o reloj (por tramos)</h3>
+    <p>Como V<sub>in</sub> cambia en t = w, se aplica la fórmula en cada tramo, usando como V₀ del tramo siguiente el valor final del anterior (V es continua porque el condensador no admite saltos de voltaje):</p>
+    <div class="eq sm">V(t) = V<sub>DD</sub>(1 − e<sup>−t/τ</sup>) para 0 ≤ t < w;&nbsp;&nbsp; V(t) = V(w)·e<sup>−(t−w)/τ</sup> para t ≥ w</div>
+    <p>Forma general para cualquier entrada (convolución con la respuesta al impulso):</p>
+    <div class="eq sm">V(t) = V₀e<sup>−t/τ</sup> + <span class="fr"><span>1</span><span>τ</span></span> ∫₀<sup>t</sup> V<sub>in</sub>(s)·e<sup>−(t−s)/τ</sup> ds</div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="simulacion">
+  <h2><span>3</span>Simulación interactiva</h2>
+  <p class="lead">La curva azul es la solución analítica calculada en cada paso con la fórmula exacta. La curva roja resuelve la misma EDO con el método numérico de Euler para que compares ambas.</p>
+  <div class="sim">
+    <div class="card ctrl">
+      <label for="mode">Señal de entrada</label>
+      <select id="mode">
+        <option value="carga">Escalón de subida (carga)</option>
+        <option value="descarga">Escalón de bajada (descarga)</option>
+        <option value="pulso">Pulso único</option>
+        <option value="cuadrada" selected>Onda cuadrada (reloj)</option>
+      </select>
+      <label for="R">Resistencia R <b id="Rv"></b></label>
+      <input type="range" id="R" min="0.1" max="10" step="0.1" value="2">
+      <label for="C">Capacitancia C <b id="Cv"></b></label>
+      <input type="range" id="C" min="1" max="100" step="1" value="10">
+      <label for="Vdd">Alimentación V<sub>DD</sub> <b id="Vddv"></b></label>
+      <input type="range" id="Vdd" min="0.8" max="5" step="0.1" value="3.3">
+      <label for="w">Ancho de pulso / semiperiodo w <b id="wv"></b></label>
+      <input type="range" id="w" min="1" max="200" step="1" value="40">
+      <label class="chk"><input type="checkbox" id="euler" checked> Superponer método de Euler</label>
+      <label for="h">Paso de Euler h <b id="hv"></b></label>
+      <input type="range" id="h" min="0.05" max="2.5" step="0.05" value="0.5">
+      <label for="speed">Velocidad de animación <b id="sv"></b></label>
+      <input type="range" id="speed" min="0.25" max="3" step="0.25" value="1">
+      <div class="btns"><button id="play">Pausa</button><button class="sec" id="reset">Reiniciar</button></div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="legend">
+          <span><i style="border-color:var(--accent)"></i>V(t) analítica</span>
+          <span><i style="border-color:var(--vin);border-top-style:dashed"></i>V<sub>in</sub>(t)</span>
+          <span id="lgE"><i style="border-color:var(--euler);border-top-style:dotted"></i>Euler</span>
+          <span><i style="border-color:var(--warn);border-top-width:1px;border-top-style:dashed"></i>umbrales V<sub>IL</sub>=0,3V<sub>DD</sub> · V<sub>IH</sub>=0,7V<sub>DD</sub></span>
+        </div>
+        <canvas id="plot" role="img" aria-label="Gráfica de V(t) y Vin(t) contra el tiempo"></canvas>
+        <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0" aria-label="Tiempo de simulación">
+      </div>
+
+      <div class="two" style="margin-top:16px">
+        <div class="card">
+          <svg id="circ" viewBox="0 0 360 200" role="img" aria-label="Circuito RC con flujo de corriente animado">
+            <path class="w" d="M40,85V40H100M175,40H240V78M240,108V170H40V125"/>
+            <path id="f1" class="flow" d="M40,85V40H240V78"/>
+            <path id="f2" class="flow" d="M240,108V170H40V125"/>
+            <circle cx="40" cy="105" r="20" fill="var(--card)" stroke="var(--fg)" stroke-width="2"/>
+            <text x="40" y="103" text-anchor="middle">V<tspan font-size="9" dy="3">in</tspan></text>
+            <text id="tVin" x="40" y="118" text-anchor="middle" font-size="10"></text>
+            <rect x="100" y="30" width="75" height="20" rx="3" fill="var(--card)" stroke="var(--fg)" stroke-width="2"/>
+            <text x="137" y="44" text-anchor="middle">R</text>
+            <rect id="capFill" x="226" y="80" width="28" height="26" fill="var(--accent)" opacity="0"/>
+            <path class="w" d="M222,78H258M222,108H258"/>
+            <text x="268" y="97">C</text>
+            <circle cx="240" cy="40" r="4" fill="var(--fg)"/>
+            <text id="tV" x="250" y="30" font-weight="700"></text>
+            <text x="124" y="190" text-anchor="middle" font-size="10">GND</text>
+          </svg>
+          <p style="margin:6px 0 0;font-size:.82rem;color:var(--muted);text-align:center">Los puntos azules fluyen más rápido con más corriente y cambian de sentido al descargar. El condensador se llena según V/V<sub>DD</sub>.</p>
+        </div>
+        <div class="card">
+          <div class="stats">
+            <div class="stat"><small>τ = R·C</small><b id="mTau"></b></div>
+            <div class="stat"><small>t<sub>pd</sub> (50 %) = 0,69τ</small><b id="mPd"></b></div>
+            <div class="stat"><small>t<sub>r</sub> (10–90 %) = 2,2τ</small><b id="mTr"></b></div>
+            <div class="stat"><small>t actual</small><b id="mT"></b></div>
+            <div class="stat"><small>V(t)</small><b id="mV"></b></div>
+            <div class="stat"><small>i(t) = (V<sub>in</sub>−V)/R</small><b id="mI"></b></div>
+            <div class="stat"><small>Nivel lógico leído</small><b id="mLog"></b></div>
+            <div class="stat"><small>Potencia dinámica C·V²·f</small><b id="mP"></b></div>
+            <div class="stat"><small>Error máx. de Euler</small><b id="mErr"></b></div>
+          </div>
+          <p id="diag" style="margin:12px 0 0;font-size:.9rem"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="analisis">
+  <h2><span>4</span>Análisis del modelo</h2>
+  <p class="lead">Qué se observa en la simulación, dónde el modelo se aleja del hardware real y cómo mejorarlo.</p>
+  <div class="card">
+    <h3 style="margin-top:0">Lo que se puede concluir</h3>
+    <ul>
+      <li><b>Velocidad máxima de reloj:</b> para que la señal alcance el 90 % dentro de un semiperiodo se necesita w ≥ τ·ln 10 ≈ 2,3τ. Si w es menor, la señal no llega al nivel lógico correcto (se ve en la simulación al subir R, C o reducir w). Esto es lo que limita la frecuencia de los buses.</li>
+      <li><b>Energía por transición:</b> la fuente entrega C·V<sub>DD</sub>², la mitad se almacena en C y la otra mitad (½·C·V<sub>DD</sub>²) se disipa en R <i>sin depender del valor de R</i>. Así se llega a P = C·V<sub>DD</sub>²·f y se explica por qué bajar V<sub>DD</sub> reduce el consumo cuadráticamente.</li>
+      <li><b>Integridad de señal:</b> mientras V está entre V<sub>IL</sub> y V<sub>IH</sub> el nivel lógico es indefinido; tardar mucho en cruzar esa zona genera errores y aumenta el consumo de cortocircuito.</li>
+      <li><b>Sobre el método numérico:</b> Euler con h &lt; τ imita bien la solución exacta; con h → 2τ oscila y con h &gt; 2τ diverge (inestable), aunque el sistema físico es siempre estable. Por eso los simuladores de circuitos usan métodos implícitos o adaptativos.</li>
+    </ul>
+  </div>
+  <h3>Deficiencias y posibles mejoras</h3>
+  <div class="card" style="padding:4px 8px;overflow-x:auto">
+    <table>
+      <tr><th>Simplificación del modelo</th><th>Qué pasa en la realidad</th><th>Mejora posible</th></tr>
+      <tr><td>R constante</td><td>El transistor no es una resistencia: su corriente depende de V<sub>GS</sub> y V<sub>DS</sub>, y pasa por saturación y región lineal. La curva real es menos exponencial.</td><td>Reemplazar R por la corriente del MOSFET (modelo Shichman–Hodges o BSIM): <i>C·dV/dt = I<sub>D</sub>(V)</i>, una EDO no lineal que se resuelve numéricamente (RK4).</td></tr>
+      <tr><td>C constante</td><td>Las capacitancias de unión y de compuerta cambian con el voltaje (C<sub>j</sub>(V)). También hay efecto Miller con el drenador de la compuerta siguiente.</td><td>Usar C(V) y la ecuación de carga d(Q(V))/dt = i.</td></tr>
+      <tr><td>Un solo nodo RC concentrado</td><td>Una pista larga reparte R y C a lo largo de su longitud y el retardo crece con la longitud al cuadrado (≈0,38·R<sub>tot</sub>·C<sub>tot</sub>).</td><td>Modelo distribuido (ecuación de difusión) o escalera de n celdas RC con retardo de Elmore.</td></tr>
+      <tr><td>Sin inductancia</td><td>Con frecuencias de GHz los bondings y los cables añaden L; aparecen oscilaciones y rebotes (<i>ringing</i>) que un RC nunca muestra.</td><td>Pasar a un RLC de segundo orden o a la ecuación del telegrafista, con reflexiones y terminación adaptada.</td></tr>
+      <tr><td>Entrada ideal (escalón instantáneo)</td><td>La etapa anterior tiene su propio tiempo de subida y la señal llega con jitter.</td><td>Usar V<sub>in</sub> como rampa o como la salida de la compuerta anterior (etapas en cascada).</td></tr>
+      <tr><td>Nodo aislado</td><td>Existe acoplamiento con pistas vecinas (diafonía), ruido de alimentación, variación con temperatura y con el proceso de fabricación.</td><td>Agregar capacitancias de acoplamiento entre nodos (sistema de EDOs), fuentes de ruido y barridos Monte Carlo.</td></tr>
+      <tr><td>Umbrales fijos 0,3 / 0,7 V<sub>DD</sub></td><td>Los umbrales reales dependen de la tecnología, la temperatura y el tamaño de los transistores.</td><td>Usar la curva de transferencia del inversor siguiente.</td></tr>
+    </table>
+  </div>
+  <p class="lead" style="margin-top:16px">En resumen, el modelo RC de primer orden es una excelente aproximación para estimar órdenes de magnitud (τ, retardo, frecuencia máxima, potencia) en el diseño preliminar, pero la verificación final de un bus de alta velocidad debe hacerse con modelos no lineales y distribuidos.</p>
+</section>
+</main>
+<footer>Proyecto de Ecuaciones Diferenciales · Modelo: dV/dt + V/(RC) = V<sub>in</sub>/(RC)</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
